@@ -43,6 +43,14 @@ export default function App() {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
+  // Вызывается только при УСПЕШНОМ создании нотатки:
+  // возвращаем пользователя на 1-ю страницу, чтобы новая нотатка
+  // сразу попала в видимую область, и закрываем модалку.
+  const handleNoteCreated = () => {
+    setPage(1);
+    setIsModalOpen(false);
+  };
+
   const notes = data?.notes ?? [];
   const totalPages = data?.totalPages ?? 0;
 
@@ -72,7 +80,7 @@ export default function App() {
 
       {isModalOpen && (
         <Modal onClose={handleCloseModal}>
-          <NoteForm onClose={handleCloseModal} />
+          <NoteForm onClose={handleCloseModal} onCreated={handleNoteCreated} />
         </Modal>
       )}
     </div>

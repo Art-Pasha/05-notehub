@@ -19,6 +19,7 @@ interface NoteFormValues {
 
 interface NoteFormProps {
   onClose: () => void;
+  onCreated: () => void;
 }
 
 const initialValues: NoteFormValues = {
@@ -27,28 +28,32 @@ const initialValues: NoteFormValues = {
   tag: 'Todo',
 };
 
-const NoteFormSchema = Yup.object().shape({
+const NoteFormSchema: Yup.ObjectSchema<NoteFormValues> = Yup.object({
   title: Yup.string()
     .min(3, 'Title must be at least 3 characters')
     .max(50, 'Title must be at most 50 characters')
     .required('Title is required'),
-  content: Yup.string().max(500, 'Content must be at most 500 characters'),
-  tag: Yup.string()
-    .oneOf(
-      ['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'],
-      'Invalid tag'
-    )
+  content: Yup.string()
+    .max(500, 'Content must be at most 500 characters')
+    .defined(),
+  tag: Yup.mixed<NoteTag>()
+    .oneOf(['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'], 'Invalid tag')
     .required('Tag is required'),
 });
 
-export default function NoteForm({ onClose }: NoteFormProps) {
+export default function NoteForm({ onClose, onCreated }: NoteFormProps) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: createNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
-      onClose();
+      onCreated();
+    },
+    onError: (error) => {
+      // Смотри в консоль браузера — тут будет реальная причина
+      // (401 — неверный/просроченный токен, 400 — сервер отклонил данные и т.д.)
+      console.error('Failed to create note:', error);
     },
   });
 
@@ -117,6 +122,13 @@ export default function NoteForm({ onClose }: NoteFormProps) {
               className={css.error}
             />
           </div>
+
+          {mutation.isError && (
+            <span className={css.error}>
+              Could not create the note. Check your token / connection and
+              try again.
+            </span>
+          )}
 
           <div className={css.actions}>
             <button
